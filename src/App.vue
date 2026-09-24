@@ -9,7 +9,6 @@ const STORE_KEY='lhsport.v2', TOKEN_KEY='lhsport.accessToken'
 let stored={}; try{stored=JSON.parse(localStorage.getItem(STORE_KEY)||localStorage.getItem('lhsport.v1')||'{}')}catch{}
 const level=ref(['beginner','advanced'].includes(stored.level)?stored.level:'beginner')
 const TRAINING_DAYS=['Push','Pull','Legs','GlutesCore']
-const LEVEL_OPTIONS={beginner:'新手 · 約 40 分鐘',advanced:'非新手'}
 const DAY_LABELS={Push:'推',Pull:'拉',Legs:'腿',GlutesCore:'臀＋核心'}
 const day=ref(TRAINING_DAYS.includes(stored.day)?stored.day:'Push')
 const view=ref('train'), logs=ref(Array.isArray(stored.logs)?stored.logs.map(x=>({...x,syncStatus:x.syncStatus||'pending'})):[])
@@ -21,7 +20,6 @@ const exercises=computed(()=>programs.value[level.value]?.[day.value]||[])
 const total=computed(()=>exercises.value.reduce((n,e)=>n+Number(e.sets||0),0))
 const done=computed(()=>draft.value?.sets?.flat().filter(s=>s.done).length||0)
 const pendingCount=computed(()=>logs.value.filter(l=>l.syncStatus!=='synced').length)
-const visibleLevels=computed(()=>user.value?.userId==='user_1'?['advanced']:user.value?.userId==='user_2'?['beginner']:['beginner','advanced'])
 const statusText=computed(()=>({idle:'連線中',syncing:'同步中…',synced:'已同步',pending:`待同步 ${pendingCount.value}`,offline:'離線使用',error:'同步失敗',locked:'尚未連線'}[syncState.value]))
 const last=computed(()=>{const out={};for(const log of logs.value)for(const e of log.exercises||[])if(!out[e.id])out[e.id]=e.sets;return out})
 const dayLabel=value=>DAY_LABELS[value]||value
@@ -71,7 +69,7 @@ onUnmounted(()=>{clearInterval(timer);window.removeEventListener('online',syncAl
 <p v-if="syncMessage&&syncState==='error'" class="sync-error">{{syncMessage}} · 點右上角重試</p>
 <nav><button :class="{active:view==='train'}" @click="view='train'">今日訓練</button><button :class="{active:view==='history'}" @click="view='history'">訓練歷史 · {{logs.length}}</button><button v-if="accessToken" @click="forgetAccess">切換使用者</button></nav>
 <template v-if="view==='train'"><div class="heading"><div><small class="overline">TODAY'S SESSION</small><h1>{{dayLabel(day)}} <span>訓練</span></h1></div><div class="progress"><strong>{{done}}<span>/{{total}}</span></strong><small>已完成組數</small></div></div>
-<div class="choices"><div class="switch"><button v-for="option in visibleLevels" :key="option" :class="{selected:level===option}" @click="choose(option,day)">{{LEVEL_OPTIONS[option]}}</button></div><div class="switch day-switch"><button v-for="d in TRAINING_DAYS" :key="d" :class="{selected:day===d}" @click="choose(level,d)">{{dayLabel(d)}}</button></div></div>
+<div class="choices"><div class="switch day-switch"><button v-for="d in TRAINING_DAYS" :key="d" :class="{selected:day===d}" @click="choose(level,d)">{{dayLabel(d)}}</button></div></div>
 <p class="hint" v-if="level==='beginner'">熱身 5 分鐘 · 正式訓練約 30 分鐘 · 收操 5 分鐘</p><div class="timer"><div><small>組間休息</small><strong>{{clock(seconds)}}</strong></div><div><button @click="rest(60)">1 分鐘</button><button @click="rest(90)">1:30</button><button :disabled="!seconds" @click="running=!running">{{running?'暫停':'繼續'}}</button></div></div>
 <section class="cards"><article v-for="(e,i) in exercises" :key="e.id" class="card"><div class="card-head"><span class="num">{{String(i+1).padStart(2,'0')}}</span><div class="title"><h2>{{e.name}}</h2><p>{{repsLabel(e.reps)}} · 休息 {{e.rest}} · {{e.focus}}</p></div><button class="guide" @click="guide=guides[e.guide]" :disabled="!guides[e.guide]">動作指引</button></div><p class="last" v-if="last[e.id]?.length">上次：{{last[e.id].map(s=>`${s.weight||'自重'} kg × ${s.reps||'—'}`).join('、')}}</p><div class="set-head"><span>組數</span><span>重量 kg</span><span>次數</span><span>完成</span></div><div v-for="(set,n) in draft.sets[i]" :key="n" class="set"><label>第 {{n+1}} 組</label><input type="number" inputmode="decimal" min="0" step="0.5" placeholder="kg" v-model="set.weight"><input type="number" inputmode="numeric" min="0" step="1" :placeholder="e.reps.includes('秒')?'秒':'下'" v-model="set.reps"><input type="checkbox" v-model="set.done" @change="set.done&&rest(e.restSeconds)"></div></article></section>
 <div class="actions"><button class="plain" @click="reset">清空本次</button><button class="primary" :disabled="!done" @click="finish">完成訓練 · {{done}} 組</button></div></template>
