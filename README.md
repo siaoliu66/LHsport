@@ -26,6 +26,17 @@ Apps Script 網址已設定在 `src/services/workoutApi.js`。網站第一次開
 
 `google-sheets/Exercises.csv` 與 `google-sheets/Programs.csv` 是目前菜單的初始資料。在 Google 試算表對應工作表選「檔案 → 匯入 → 上傳」，匯入位置選「取代目前工作表」。保留工作表名稱及第一列欄位名稱。之後可直接在試算表調整組數、次數、休息與啟用狀態。
 
+使用者與程度固定對應：`user_1` 只顯示非新手菜單，`user_2` 只顯示新手菜單。兩位使用者都有「臀＋核心」訓練日。若 Apps Script 仍只允許原本三種訓練日，請把 `['Push', 'Pull', 'Legs']` 改成 `['Push', 'Pull', 'Legs', 'GlutesCore']`。也建議在 `appendWorkoutLog(user, log)` 的 `validateWorkoutLog(log);` 後加入以下檢查，再建立新版本並重新部署：
+
+```javascript
+const allowedLevel = user.userId === 'user_1' ? 'advanced' : 'beginner';
+if (log.level !== allowedLevel) {
+  throw new Error('此使用者不能寫入這個程度的訓練紀錄');
+}
+```
+
+`google-sheets/LHsport_GoogleSheets.xlsx` 整合了最新版 Exercises 與 Programs，方便檢查資料；已經存在 WorkoutLogs 的正式試算表，仍建議分別用兩個 CSV 取代對應工作表，避免覆蓋訓練紀錄。
+
 ## 指令
 
 `npm run build` 產生 `dist/`，`npm run preview` 預覽正式建置。
