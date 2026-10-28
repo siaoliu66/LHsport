@@ -8,8 +8,8 @@ import './sync.css'
 const STORE_KEY='lhsport.v2', TOKEN_KEY='lhsport.accessToken'
 let stored={}; try{stored=JSON.parse(localStorage.getItem(STORE_KEY)||localStorage.getItem('lhsport.v1')||'{}')}catch{}
 const level=ref(['beginner','advanced'].includes(stored.level)?stored.level:'beginner')
-const TRAINING_DAYS=['Push','Pull','Legs','GlutesCore']
-const DAY_LABELS={Push:'推',Pull:'拉',Legs:'腿',GlutesCore:'臀＋核心'}
+const TRAINING_DAYS=['Push','Pull','Legs','GlutesCore','Scapula']
+const DAY_LABELS={Push:'推',Pull:'拉',Legs:'腿',GlutesCore:'臀＋核心',Scapula:'肩胛'}
 const day=ref(TRAINING_DAYS.includes(stored.day)?stored.day:'Push')
 const view=ref('train'), logs=ref(Array.isArray(stored.logs)?stored.logs.map(x=>({...x,syncStatus:x.syncStatus||'pending'})):[])
 const draft=ref(stored.draft||null), programs=ref(fallback.programs), guides=ref(fallback.guides), guide=ref(null)
@@ -33,7 +33,7 @@ const truthy=v=>v===true||v===1||String(v).toLowerCase()==='true'
 const formatRest=v=>{const s=Number(v)||60;return s>=120&&s%60===0?`${s/60}分鐘`:`${s}秒`}
 function applyRemoteCatalog(exerciseRows,programRows){
  const exRows=(exerciseRows||[]).filter(r=>truthy(r.active)),pRows=(programRows||[]).filter(r=>truthy(r.active));if(!exRows.length||!pRows.length)return false
- const exMap=new Map(exRows.map(r=>[String(r.exerciseId),r])),next={beginner:{Push:[],Pull:[],Legs:[],GlutesCore:[]},advanced:{Push:[],Pull:[],Legs:[],GlutesCore:[]}},nextGuides={}
+ const exMap=new Map(exRows.map(r=>[String(r.exerciseId),r])),next={beginner:{Push:[],Pull:[],Legs:[],GlutesCore:[],Scapula:[]},advanced:{Push:[],Pull:[],Legs:[],GlutesCore:[],Scapula:[]}},nextGuides={}
  for(const r of exRows)nextGuides[String(r.exerciseId)]={name:r.name,start:r.start,action:r.action,breath:r.breath,mistakes:r.mistakes,cue:r.cue,muscles:r.muscles}
  for(const r of pRows.sort((a,b)=>Number(a.order)-Number(b.order))){const e=exMap.get(String(r.exerciseId));if(!e||!next[r.level]?.[r.day])continue;next[r.level][r.day].push({id:String(r.exerciseId),name:e.name,sets:Number(r.sets)||1,reps:String(r.reps),rest:formatRest(r.restSeconds),restSeconds:Number(r.restSeconds)||60,focus:r.focus||'',guide:String(r.exerciseId)})}
  programs.value=next;guides.value=nextGuides;ensureDraft();return true
